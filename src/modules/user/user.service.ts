@@ -69,7 +69,7 @@ export class UserService {
     const user = await this.prismaService.user.findUnique({
       where: { id },
       include: {
-        socialAccount: {
+        socialAccounts: {
           select: {
             provider: true,
           },
@@ -93,8 +93,8 @@ export class UserService {
       name: user.name,
       birth: user.birth ? dayjs(user.birth).format('YYYY-MM-DD') : null,
       phone: user.phone,
-      socials: user.socialAccount
-        ? user.socialAccount.map((socialAccount) => socialAccount.provider)
+      socials: user.socialAccounts
+        ? user.socialAccounts.map((socialAccount) => socialAccount.provider)
         : null,
       profile: user.userProfile,
     };
