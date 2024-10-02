@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model EmailAuth {
+  id       String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email    String   @unique
+  code     String   @unique
+  joined   Boolean  @default(false)
+  createAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updateAt DateTime @default(now()) @updatedAt @map("update_at") @db.Timestamptz(6)
+
+  @@map("email_auth")
+}
+
+model User {
+  id       String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email    String    @unique
+  password String?
+  name     String
+  birth    DateTime?
+  phone    String?   @unique
+  createAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updateAt DateTime  @default(now()) @updatedAt @map("update_at") @db.Timestamptz(6)
+
+  userProfile   UserProfile?
+  socialAccount SocialAccount[]
+  groupsOnUsers GroupsOnUsers[]
+  dazims        Dazim[]
+
+  @@map("user")
+}
+
+model UserProfile {
+  id        String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String? @unique @map("user_id") @db.Uuid
+  nickName  String? @unique @map("nick_name")
+  thumbnail String? @map("thumbnail")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profile")
+}
+
+model SocialAccount {
+  id       String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  socialId String   @unique @map("social_id")
+  provider Provider
+  createAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updateAt DateTime @default(now()) @updatedAt @map("update_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([socialId, provider])
+  @@map("social_account")
+}
+
+enum Provider {
+  KAKAO
+  GOOGLE
+}
+
+model GroupsOnUsers {
+  userId   String   @map("user_id") @db.Uuid
+  groupId  String   @map("group_id") @db.Uuid
+  createAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updateAt DateTime @default(now()) @updatedAt @map("update_at") @db.Timestamptz(6)
+
+  user  User  @relation(fields: [userId], references: [id])
+  group Group @relation(fields: [groupId], references: [id])
+
+  @@id([userId, groupId])
+  @@map("groups_on_users")
+}
+
+model Group {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name       String
+  thumbnail  String
+  inviteCode String   @unique
+  createAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updateAt   DateTime @default(now()) @updatedAt @map("update_at") @db.Timestamptz(6)
+
+  groupsOnUsers GroupsOnUsers[]
+  dazims        Dazim[]
+
+  @@map("group")
+}
+
+model Dazim {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  content   String
+  photo     String?
+  isSuccess Boolean  @default(false)
+  createAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updateAt  DateTime @default(now()) @updatedAt @map("update_at") @db.Timestamptz(6)
+  userId    String   @db.Uuid
+  groupId   String   @db.Uuid
+
+  user  User  @relation(fields: [userId], references: [id])
+  Group Group @relation(fields: [groupId], references: [id])
+
+  @@map("dazim")
+}
