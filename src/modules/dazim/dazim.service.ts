@@ -1,11 +1,11 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '@/modules/prisma/prisma.service';
 import * as dayjs from 'dayjs';
-import * as bcrypt from 'bcrypt';
 import { MemoryStoredFile } from 'nestjs-form-data';
 import { AwsService } from '../aws/aws.service';
 import { v4 as uuid } from 'uuid';
@@ -29,7 +29,23 @@ export class DazimService {
     groupId: string;
     content: string;
   }) {
+    // check if group exists
     await this.groupService.getGroupById(groupId);
+
+    // check if dazim created today
+    const dazim = await this.prismaService.dazim.findFirst({
+      where: {
+        userId,
+        groupId,
+        createAt: {
+          gte: dayjs().startOf('day').toDate(),
+          lt: dayjs().endOf('day').toDate(),
+        },
+      },
+    });
+    if (dazim) {
+      throw new ConflictException('Already Created Dazim today');
+    }
 
     await this.prismaService.dazim.create({
       data: {
@@ -49,8 +65,8 @@ export class DazimService {
     dazimId: string;
     photo: MemoryStoredFile;
   }) {
+    // check if it's mine
     const dazim = await this.getDazimById(dazimId);
-
     if (userId !== dazim.userId) {
       throw new UnauthorizedException();
     }
@@ -114,6 +130,28 @@ export class DazimService {
     groupId: string;
     date: string;
   }) {
+    // check if member of group
+    const isGroupMember = await this.groupService.checkIsGroupMember({
+      userId,
+      groupId,
+    });
+    if (!isGroupMember) {
+      throw new UnauthorizedException();
+    }
+
+    // check if my dazim created
+    const myDazim = await this.prismaService.dazim.findFirst({
+      where: {
+        userId,
+        createAt: {
+          gte: dayjs(date).startOf('day').toDate(),
+          lt: dayjs(date).endOf('day').toDate(),
+        },
+      },
+    });
+
+    const isCreatedMyDazim = !!myDazim;
+
     const dazims = await this.prismaService.dazim.findMany({
       where: {
         groupId,
@@ -131,30 +169,31 @@ export class DazimService {
       },
     });
 
-    const isGroupMember = await this.groupService.checkIsGroupMember({
-      userId,
-      groupId,
-    });
-
-    if (!isGroupMember) {
-      throw new UnauthorizedException();
-    }
-
-    return dazims.map((dazim) => ({
-      id: dazim.id,
-      content: dazim.content,
-      photo: dazim.photo,
-      isSuccess: dazim.isSuccess,
-      createAt: dazim.createAt,
-      updateAt: dazim.updateAt,
-      user: {
-        id: dazim.user.id,
-        isMe: dazim.user.id === userId,
-        profile: dazim.user.userProfile && {
-          nickName: dazim.user.userProfile.nickName,
-          thumbnail: dazim.user.userProfile.thumbnail,
-        },
-      },
-    }));
+    return {
+      isCreatedMyDazim,
+      data: dazims
+        .map((dazim) => ({
+          id: dazim.id,
+          content: dazim.content,
+          photo: dazim.photo,
+          isSuccess: dazim.isSuccess,
+          createAt: dazim.createAt,
+          updateAt: dazim.updateAt,
+          user: {
+            id: dazim.user.id,
+            isMe: dazim.user.id === userId,
+            profile: dazim.user.userProfile && {
+              nickName: dazim.user.userProfile.nickName,
+              thumbnail: dazim.user.userProfile.thumbnail,
+            },
+          },
+        }))
+        // my dazim first
+        .sort((a, b) => {
+          if (a.user.id === userId) return -1;
+          if (b.user.id === userId) return 1;
+          return 0;
+        }),
+    };
   }
 }

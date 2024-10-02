@@ -38,7 +38,9 @@ export class DazimController {
       content,
     });
 
-    res.status(HttpStatus.CREATED).send('Create Dazim Successfully');
+    res
+      .status(HttpStatus.CREATED)
+      .send({ message: 'Create Dazim Successfully' });
   }
 
   @FormDataRequest({ storage: MemoryStoredFile })
