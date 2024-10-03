@@ -28,10 +28,12 @@ model User {
   createAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updateAt DateTime  @default(now()) @updatedAt @map("update_at") @db.Timestamptz(6)
 
-  userProfile   UserProfile?
-  socialAccount SocialAccount[]
-  groupsOnUsers GroupsOnUsers[]
-  dazims        Dazim[]
+  userProfile    UserProfile?
+  socialAccounts SocialAccount[]
+  groupsOnUsers  GroupsOnUsers[]
+  dazims         Dazim[]
+  dazimComments  DazimComment[]
+  dazimReactions DazimReaction[]
 
   @@map("user")
 }
@@ -69,11 +71,12 @@ enum Provider {
 model GroupsOnUsers {
   userId   String   @map("user_id") @db.Uuid
   groupId  String   @map("group_id") @db.Uuid
+  order    Int      @default(0)
   createAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updateAt DateTime @default(now()) @updatedAt @map("update_at") @db.Timestamptz(6)
 
-  user  User  @relation(fields: [userId], references: [id])
-  group Group @relation(fields: [groupId], references: [id])
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@id([userId, groupId])
   @@map("groups_on_users")
@@ -83,6 +86,7 @@ model Group {
   id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   name       String
   thumbnail  String
+  notice     String?
   inviteCode String   @unique
   createAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updateAt   DateTime @default(now()) @updatedAt @map("update_at") @db.Timestamptz(6)
@@ -103,8 +107,48 @@ model Dazim {
   userId    String   @db.Uuid
   groupId   String   @db.Uuid
 
-  user  User  @relation(fields: [userId], references: [id])
-  Group Group @relation(fields: [groupId], references: [id])
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group          Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  dazimComments  DazimComment[]
+  dazimReactions DazimReaction[]
 
   @@map("dazim")
+}
+
+model DazimComment {
+  id       String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  content  String
+  createAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updateAt DateTime       @default(now()) @updatedAt @map("update_at") @db.Timestamptz(6)
+  userId   String         @db.Uuid
+  dazimId  String         @db.Uuid
+  parentId String?        @db.Uuid
+  replies  DazimComment[] @relation("dazim_comment_replies")
+
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dazim  Dazim         @relation(fields: [dazimId], references: [id], onDelete: Cascade)
+  parent DazimComment? @relation("dazim_comment_replies", fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@map("dazim_comment")
+}
+
+model DazimReaction {
+  id           String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  reactionType ReactionType
+  dazimId      String       @db.Uuid
+  userId       String       @db.Uuid
+
+  dazim Dazim @relation(fields: [dazimId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([dazimId, reactionType, userId])
+  @@map("dazim_reactions")
+}
+
+enum ReactionType {
+  FIRE
+  STAR
+  CONGRATULATIONS
+  HEART
+  MUSIC
 }

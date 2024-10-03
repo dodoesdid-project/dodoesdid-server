@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '@/modules/prisma/prisma.service';
 import * as dayjs from 'dayjs';
@@ -150,6 +151,41 @@ export class UserService {
       },
       data: {
         password: await bcrypt.hash(password, 10),
+      },
+    });
+  }
+
+  async verifyPassword({
+    userId,
+    password,
+  }: {
+    userId: string;
+    password: string;
+  }) {
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!(await bcrypt.compare(password, user.password))) {
+      throw new UnauthorizedException('Password does not match');
+    }
+  }
+
+  async updateNickName({
+    userId,
+    nickName,
+  }: {
+    userId: string;
+    nickName: string;
+  }) {
+    await this.prismaService.userProfile.update({
+      where: {
+        userId,
+      },
+      data: {
+        nickName,
       },
     });
   }

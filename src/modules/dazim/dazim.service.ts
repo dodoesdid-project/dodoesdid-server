@@ -11,6 +11,10 @@ import { AwsService } from '../aws/aws.service';
 import { v4 as uuid } from 'uuid';
 import { formatDateTime } from '@/utils/common';
 import { GroupService } from '../group/group.service';
+import * as utc from 'dayjs/plugin/utc';
+import * as timezone from 'dayjs/plugin/timezone';
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 @Injectable()
 export class DazimService {
@@ -30,7 +34,10 @@ export class DazimService {
     content: string;
   }) {
     // check if group exists
-    await this.groupService.getGroupById(groupId);
+    await this.groupService.checkGroupExistenceAndMembership({
+      userId,
+      groupId,
+    });
 
     // check if dazim created today
     const dazim = await this.prismaService.dazim.findFirst({
@@ -131,69 +138,76 @@ export class DazimService {
     date: string;
   }) {
     // check if member of group
-    const isGroupMember = await this.groupService.checkIsGroupMember({
+    await this.groupService.checkGroupExistenceAndMembership({
       userId,
       groupId,
     });
-    if (!isGroupMember) {
-      throw new UnauthorizedException();
-    }
 
-    // check if my dazim created
-    const myDazim = await this.prismaService.dazim.findFirst({
-      where: {
-        userId,
-        createAt: {
-          gte: dayjs(date).startOf('day').toDate(),
-          lt: dayjs(date).endOf('day').toDate(),
-        },
-      },
-    });
-
-    const isCreatedMyDazim = !!myDazim;
-
-    const dazims = await this.prismaService.dazim.findMany({
-      where: {
-        groupId,
-        createAt: {
-          gte: dayjs(date).startOf('day').toDate(),
-          lt: dayjs(date).endOf('day').toDate(),
-        },
-      },
-      include: {
+    const groupsOnUsers = await this.prismaService.groupsOnUsers.findMany({
+      where: { groupId },
+      select: {
         user: {
-          include: {
-            userProfile: true,
-          },
-        },
-      },
-    });
-
-    return {
-      isCreatedMyDazim,
-      data: dazims
-        .map((dazim) => ({
-          id: dazim.id,
-          content: dazim.content,
-          photo: dazim.photo,
-          isSuccess: dazim.isSuccess,
-          createAt: dazim.createAt,
-          updateAt: dazim.updateAt,
-          user: {
-            id: dazim.user.id,
-            isMe: dazim.user.id === userId,
-            profile: dazim.user.userProfile && {
-              nickName: dazim.user.userProfile.nickName,
-              thumbnail: dazim.user.userProfile.thumbnail,
+          select: {
+            id: true,
+            userProfile: {
+              select: {
+                nickName: true,
+                thumbnail: true,
+              },
+            },
+            dazims: {
+              where: {
+                createAt: {
+                  gte: dayjs(date).startOf('day').toDate(),
+                  lte: dayjs(date).endOf('day').toDate(),
+                },
+                groupId,
+              },
+              select: {
+                id: true,
+                groupId: true,
+                content: true,
+                photo: true,
+                isSuccess: true,
+                createAt: true,
+                updateAt: true,
+              },
             },
           },
-        }))
+        },
+      },
+    });
+
+    return (
+      groupsOnUsers
+        .map((groupsOnUser) => {
+          const { user } = groupsOnUser;
+          const dazim = user.dazims[0] || null;
+
+          return {
+            id: user.id,
+            isMe: user.id === userId,
+            profile: user.userProfile && {
+              nickName: user.userProfile.nickName,
+              thumbnail: user.userProfile.thumbnail,
+            },
+            dazim: dazim && {
+              id: dazim.id,
+              groupId: dazim.groupId,
+              content: dazim.content,
+              photo: dazim.photo,
+              isSuccess: dazim.isSuccess,
+              createAt: formatDateTime(dazim.createAt),
+              updateAt: formatDateTime(dazim.updateAt),
+            },
+          };
+        })
         // my dazim first
         .sort((a, b) => {
-          if (a.user.id === userId) return -1;
-          if (b.user.id === userId) return 1;
+          if (a.id === userId) return -1;
+          if (b.id === userId) return 1;
           return 0;
-        }),
-    };
+        })
+    );
   }
 }

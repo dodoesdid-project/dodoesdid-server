@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpStatus,
+  Patch,
   Post,
   Put,
   Res,
@@ -22,6 +23,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { CheckEmailDuplicateDto } from './dto/check-email-duplicate.dto';
 import { CheckPhoneDuplicateDto } from './dto/check-phon-duplicate.dto';
+import { UpdateNickNameDto } from './dto/update-nick-name.dto';
 
 @Controller('user')
 export class UserController {
@@ -116,6 +118,36 @@ export class UserController {
       password,
     });
 
+    res.status(HttpStatus.NO_CONTENT).send();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @FormDataRequest({ storage: MemoryStoredFile })
+  @Post('/me/password-verify')
+  async verifyPassword(
+    @User() user: User,
+    @Body() { password }: UpdatePasswordDto,
+    @Res() res: Response,
+  ) {
+    await this.userService.verifyPassword({
+      userId: user.id,
+      password,
+    });
+
+    res.status(HttpStatus.NO_CONTENT).send();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('/me/nickName')
+  async updateNickName(
+    @User() user: User,
+    @Body() { nickName }: UpdateNickNameDto,
+    @Res() res: Response,
+  ) {
+    await this.userService.updateNickName({
+      userId: user.id,
+      nickName,
+    });
     res.status(HttpStatus.NO_CONTENT).send();
   }
 }

@@ -17,6 +17,7 @@ import { NestjsFormDataModule } from 'nestjs-form-data';
 import { AwsModule } from './modules/aws/aws.module';
 import { GroupModule } from './modules/group/group.module';
 import { DazimModule } from './modules/dazim/dazim.module';
+import { FeedModule } from './modules/feed/feed.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { DazimModule } from './modules/dazim/dazim.module';
     AwsModule,
     GroupModule,
     DazimModule,
+    FeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],
