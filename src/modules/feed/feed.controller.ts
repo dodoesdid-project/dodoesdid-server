@@ -7,7 +7,6 @@ import {
   Param,
   Post,
   Put,
-  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -55,13 +54,14 @@ export class FeedController {
     @Body() { reactionType }: ToggleReactionFeedDto,
     @Res() res: Response,
   ) {
-    const count = await this.feedService.toggleReactionFeed({
-      userId: user.id,
-      feedId,
-      reactionType,
-    });
+    const { count, isMeReactionType } =
+      await this.feedService.toggleReactionFeed({
+        userId: user.id,
+        feedId,
+        reactionType,
+      });
 
-    res.status(HttpStatus.OK).send({ reactionType, count });
+    res.status(HttpStatus.OK).send({ reactionType, count, isMeReactionType });
   }
 
   @UseGuards(JwtAuthGuard)

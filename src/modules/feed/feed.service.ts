@@ -6,8 +6,9 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@/modules/prisma/prisma.service';
 import { AwsService } from '../aws/aws.service';
-import { formatDateTime } from '@/utils/common';
+import { formatDateTime, getTimeAgo } from '@/utils/common';
 import { ReactionType } from '@prisma/client';
+import { watch } from 'fs';
 
 @Injectable()
 export class FeedService {
@@ -56,8 +57,10 @@ export class FeedService {
       id: feed.id,
       groupId: feed.groupId,
       content: feed.content,
+      photo: feed.photo,
       createAt: formatDateTime(feed.createAt),
       updateAt: formatDateTime(feed.updateAt),
+      timeAge: getTimeAgo(feed.updateAt),
       user: {
         id: feed.user.id,
         profile: feed.user.userProfile && {
@@ -104,21 +107,23 @@ export class FeedService {
       },
     });
 
-    const counts = await this.prismaService.dazimReaction.groupBy({
-      by: ['reactionType'],
-      where: {
-        dazimId: feedId,
-      },
-      _count: {
-        reactionType: true,
-      },
-    });
-
     if (!feed) {
       throw new NotFoundException('Feed not found');
     }
 
-    const reactionCounts = counts.reduce(
+    const dazimReactionGroupBy = await this.prismaService.dazimReaction.groupBy(
+      {
+        by: ['reactionType'],
+        where: {
+          dazimId: feedId,
+        },
+        _count: {
+          reactionType: true,
+        },
+      },
+    );
+
+    const reactionCounts = dazimReactionGroupBy.reduce(
       (acc, { reactionType, _count }) => {
         acc[`${reactionType.toLowerCase()}Count`] = _count.reactionType;
         return acc;
@@ -132,6 +137,29 @@ export class FeedService {
       },
     );
 
+    const dazimReactions = await this.prismaService.dazimReaction.findMany({
+      where: {
+        dazimId: feedId,
+        userId,
+      },
+    });
+
+    const isMeReactions = dazimReactions.reduce(
+      (acc, { reactionType }) => {
+        acc[
+          `isMeReaction${reactionType.charAt(0)}${reactionType.slice(1).toLowerCase()}`
+        ] = true;
+        return acc;
+      },
+      {
+        isMeReactionFire: false,
+        isMeReactionStar: false,
+        isMeReactionCongratulations: false,
+        isMeReactionHeart: false,
+        isMeReactionMusic: false,
+      },
+    );
+
     return {
       id: feed.id,
       groupId: feed.groupId,
@@ -139,6 +167,7 @@ export class FeedService {
       photo: feed.photo,
       createAt: formatDateTime(feed.createAt),
       updateAt: formatDateTime(feed.updateAt),
+      timeAge: getTimeAgo(feed.updateAt),
       user: {
         id: feed.id,
         profile: feed.user.userProfile && {
@@ -147,6 +176,7 @@ export class FeedService {
         },
       },
       ...reactionCounts,
+      ...isMeReactions,
     };
   }
 
@@ -158,7 +188,10 @@ export class FeedService {
     userId: string;
     feedId: string;
     reactionType: ReactionType;
-  }): Promise<number> {
+  }): Promise<{
+    count: number;
+    isMeReactionType: boolean;
+  }> {
     const dazimReaction = await this.prismaService.dazimReaction.findUnique({
       where: {
         dazimId_reactionType_userId: {
@@ -196,7 +229,10 @@ export class FeedService {
       },
     });
 
-    return count;
+    return {
+      count,
+      isMeReactionType: !!!dazimReaction,
+    };
   }
 
   async getFeedComments({
@@ -237,6 +273,17 @@ export class FeedService {
             content: true,
             createAt: true,
             updateAt: true,
+            user: {
+              select: {
+                id: true,
+                userProfile: {
+                  select: {
+                    nickName: true,
+                    thumbnail: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -257,8 +304,15 @@ export class FeedService {
         id: reply.id,
         parentId: reply.parentId,
         content: reply.content,
-        createAt: formatDateTime(feedComment.createAt),
-        updateAt: formatDateTime(feedComment.updateAt),
+        createAt: formatDateTime(reply.createAt),
+        updateAt: formatDateTime(reply.updateAt),
+        user: {
+          id: reply.user.id,
+          profile: {
+            nickName: reply.user.userProfile.nickName,
+            thumbnail: reply.user.userProfile.thumbnail,
+          },
+        },
       })),
     }));
   }
