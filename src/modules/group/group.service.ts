@@ -78,7 +78,7 @@ export class GroupService {
         groupsOnUsers: {
           create: {
             userId,
-            order: ++maxOrderGroup.order,
+            order: maxOrderGroup ? ++maxOrderGroup.order : 0,
           },
         },
       },
