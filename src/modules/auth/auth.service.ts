@@ -63,6 +63,10 @@ export class AuthService {
       throw new UnauthorizedException('Email or password does not match');
     }
 
+    if (user.isWithdrawal) {
+      throw new ForbiddenException('Withdrawal User');
+    }
+
     return {
       accessToken: this.generateJwtToken(user.id),
       refreshToken: this.generateJwtRefreshToken(user.id),

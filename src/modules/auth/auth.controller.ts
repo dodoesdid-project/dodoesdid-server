@@ -14,7 +14,7 @@ import { Response, Send } from 'express';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { AuthService } from './auth.service';
 import { SignInDto } from './dto/sign-in.dto';
-import { setTokensCookie } from '@/utils/token';
+import { resetTokensCookie, setTokensCookie } from '@/utils/token';
 import { KakaoAuthGuard } from './guards/kakao.guards';
 import { SocialUser } from '@/common/decorators/social-user.decorator';
 import { ConfigService } from '@nestjs/config';
@@ -33,8 +33,7 @@ export class AuthController {
   @Post('sign-in')
   async signIn(@Body() { email, password }: SignInDto, @Res() res: Response) {
     const token = await this.authService.signIn({ email, password });
-    // setTokensCookie(res, token);
-    res.setHeader('authorization', `Bearer ${token.accessToken}`);
+    setTokensCookie(res, token);
     res.status(HttpStatus.NO_CONTENT).send();
   }
 
@@ -119,6 +118,12 @@ export class AuthController {
       email,
       accessToken,
     });
+    res.status(HttpStatus.NO_CONTENT).send();
+  }
+
+  @Post('sign-out')
+  async signOut(@Res() res: Response) {
+    resetTokensCookie(res);
     res.status(HttpStatus.NO_CONTENT).send();
   }
 }

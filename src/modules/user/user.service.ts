@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -86,6 +87,10 @@ export class UserService {
 
     if (!user) {
       throw new NotFoundException('User Not Found');
+    }
+
+    if (user.isWithdrawal) {
+      throw new ForbiddenException('Withdrawal User');
     }
 
     return {
@@ -186,6 +191,25 @@ export class UserService {
       },
       data: {
         nickName,
+      },
+    });
+  }
+
+  async withdrawal({
+    userId,
+    withdrawalReason,
+  }: {
+    userId: string;
+    withdrawalReason: string;
+  }) {
+    await this.prismaService.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        isWithdrawal: true,
+        withdrawalAt: dayjs().toDate(),
+        withdrawalReason,
       },
     });
   }

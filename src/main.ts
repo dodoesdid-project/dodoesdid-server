@@ -17,7 +17,6 @@ async function bootstrap() {
   app.enableCors({
     origin: [clientUrl],
     credentials: true,
-    exposedHeaders: ['Authorization'],
   });
   app.use(cookieParser());
   app.useGlobalPipes(
@@ -28,7 +27,7 @@ async function bootstrap() {
     }),
   );
 
-  app.setGlobalPrefix('api/v1', { exclude: ['health'] });
+  app.setGlobalPrefix('api/v1', { exclude: ['', 'health'] });
 
   const config = new BaseAPIDocumentation().initializeOptions();
   const document = SwaggerModule.createDocument(app, config);

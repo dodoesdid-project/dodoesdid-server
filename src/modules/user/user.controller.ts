@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Patch,
@@ -24,6 +25,7 @@ import { UpdatePasswordDto } from './dto/update-password.dto';
 import { CheckEmailDuplicateDto } from './dto/check-email-duplicate.dto';
 import { CheckPhoneDuplicateDto } from './dto/check-phon-duplicate.dto';
 import { UpdateNickNameDto } from './dto/update-nick-name.dto';
+import { withdrawalDto } from './dto/withdrawal.dto';
 
 @Controller('user')
 export class UserController {
@@ -107,7 +109,7 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @FormDataRequest({ storage: MemoryStoredFile })
-  @Put('/me/password')
+  @Patch('/me/password')
   async updatePassword(
     @User() user: User,
     @Body() { password }: UpdatePasswordDto,
@@ -147,6 +149,20 @@ export class UserController {
     await this.userService.updateNickName({
       userId: user.id,
       nickName,
+    });
+    res.status(HttpStatus.NO_CONTENT).send();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('/me/withdrawal')
+  async withdrawal(
+    @User() user: User,
+    @Body() { withdrawalReason }: withdrawalDto,
+    @Res() res: Response,
+  ) {
+    await this.userService.withdrawal({
+      userId: user.id,
+      withdrawalReason,
     });
     res.status(HttpStatus.NO_CONTENT).send();
   }
