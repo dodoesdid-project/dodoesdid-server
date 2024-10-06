@@ -23,12 +23,7 @@ import { FeedModule } from './modules/feed/feed.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [
-        `.env.${process.env.NODE_ENV}.local`,
-        '.env.local',
-        `.env.${process.env.NODE_ENV}`,
-        '.env',
-      ],
+      envFilePath: [`.env.${process.env.NODE_ENV}`, '.env'],
       load: [
         appConfig,
         databaseConfig,
