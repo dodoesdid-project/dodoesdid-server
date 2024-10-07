@@ -1,19 +1,28 @@
-import { Response } from 'express';
+import { CookieOptions, Response } from 'express';
 
 export const setTokensCookie = (
   res: Response,
-  tokens: { accessToken: string; refreshToken: string },
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+  },
+  accessTokenCookieOptions?: CookieOptions,
 ) => {
-  setAccessTokenCookie(res, tokens.accessToken);
+  setAccessTokenCookie(res, tokens.accessToken, accessTokenCookieOptions);
   setRefreshTokenCookie(res, tokens.refreshToken);
 };
 
-export const setAccessTokenCookie = (res: Response, accessToken: string) => {
+export const setAccessTokenCookie = (
+  res: Response,
+  accessToken: string,
+  cookieOptions?: CookieOptions,
+) => {
   res.cookie('access_token', accessToken, {
     httpOnly: true,
-    sameSite: 'none',
     secure: true,
-    maxAge: 1000 * 60 * 60,
+    sameSite: 'none',
+    maxAge: 1000 * 60 * 60 * 24,
+    ...cookieOptions,
   });
 };
 

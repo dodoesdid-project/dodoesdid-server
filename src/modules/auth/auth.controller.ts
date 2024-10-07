@@ -31,9 +31,15 @@ export class AuthController {
   ) {}
 
   @Post('sign-in')
-  async signIn(@Body() { email, password }: SignInDto, @Res() res: Response) {
+  async signIn(
+    @Body() { email, password, isAuto }: SignInDto,
+    @Res() res: Response,
+  ) {
     const token = await this.authService.signIn({ email, password });
-    setTokensCookie(res, token);
+    const accessTokenCookieOptions = isAuto
+      ? { maxAge: 1000 * 60 * 60 * 24 * 3 }
+      : undefined;
+    setTokensCookie(res, token, accessTokenCookieOptions);
     res.status(HttpStatus.NO_CONTENT).send();
   }
 
