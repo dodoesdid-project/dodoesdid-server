@@ -36,10 +36,11 @@ export class UserService {
 
     await this.prismaService.emailAuth.updateMany({
       data: {
-        joined: true,
+        used: true,
       },
       where: {
         email,
+        emailAuthType: 'SIGNIN',
       },
     });
   }

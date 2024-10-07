@@ -11,7 +11,7 @@ import {
 import { SendEmailVerificationCodeDto } from './dto/send-email-verification-code.dto';
 import { EmailService } from '../email/email.service';
 import { Response, Send } from 'express';
-import { VerifyEmailDto } from './dto/verify-email.dto';
+import { verifyPasswordFindCodeDto } from './dto/verify-password-find-code.dto';
 import { AuthService } from './auth.service';
 import { SignInDto } from './dto/sign-in.dto';
 import { resetTokensCookie, setTokensCookie } from '@/utils/token';
@@ -21,6 +21,7 @@ import { ConfigService } from '@nestjs/config';
 import { GoogleAuthGuard } from './guards/google.guards';
 import { FindEmailDto } from './dto/find-email.dto';
 import { sendPasswordFindEmailDto } from './dto/send-password-find-email.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -119,11 +120,17 @@ export class AuthController {
     @Body() { email }: sendPasswordFindEmailDto,
     @Res() res: Response,
   ) {
-    const { accessToken } = await this.authService.getTokenByEmail(email);
-    await this.emailService.sendPasswordFindEmail({
-      email,
-      accessToken,
-    });
+    await this.emailService.sendPasswordFindEmail(email);
+    res.status(HttpStatus.NO_CONTENT).send();
+  }
+
+  @Post('/password-find-code-verify')
+  async verifyPasswordFindCode(
+    @Body() { code }: verifyPasswordFindCodeDto,
+    @Res() res: Response,
+  ) {
+    const token = await this.authService.getTokenByCode(code);
+    setTokensCookie(res, token);
     res.status(HttpStatus.NO_CONTENT).send();
   }
 

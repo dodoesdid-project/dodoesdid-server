@@ -1,8 +1,8 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
-
 import { PrismaService } from '@/modules/prisma/prisma.service';
+import * as shortId from 'shortid';
 
 @Injectable()
 export class EmailService {
@@ -15,10 +15,16 @@ export class EmailService {
   async sendEmailSignInCode(email: string) {
     const clientUrl = this.configService.get('app.clientUrl');
     const code = Math.floor(100000 + Math.random() * 900000).toString();
+
     await this.prismaService.emailAuth.upsert({
-      where: { email },
+      where: {
+        email_emailAuthType: {
+          email,
+          emailAuthType: 'SIGNIN',
+        },
+      },
       update: { code },
-      create: { email, code },
+      create: { email, code, emailAuthType: 'SIGNIN' },
     });
     try {
       await this.mailerService.sendMail({
@@ -35,14 +41,20 @@ export class EmailService {
     }
   }
 
-  async sendPasswordFindEmail({
-    email,
-    accessToken,
-  }: {
-    email: string;
-    accessToken: string;
-  }) {
+  async sendPasswordFindEmail(email: string) {
     const clientUrl = this.configService.get('app.clientUrl');
+    const code = shortId.generate();
+
+    await this.prismaService.emailAuth.upsert({
+      where: {
+        email_emailAuthType: {
+          email,
+          emailAuthType: 'PASSWORD',
+        },
+      },
+      update: { code },
+      create: { email, code, emailAuthType: 'PASSWORD' },
+    });
 
     try {
       await this.mailerService.sendMail({
@@ -51,7 +63,7 @@ export class EmailService {
         template: 'email-password-find.ejs',
         context: {
           clientUrl: clientUrl,
-          accessToken,
+          code,
         },
       });
     } catch (e) {

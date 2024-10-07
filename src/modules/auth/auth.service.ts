@@ -77,7 +77,10 @@ export class AuthService {
     const emailAuth = await this.prismaService.emailAuth.findUnique({
       where: {
         code,
-        email,
+        email_emailAuthType: {
+          email,
+          emailAuthType: 'SIGNIN',
+        },
         createAt: {
           lte: dayjs().add(24, 'hour').toDate(),
         },
@@ -93,14 +96,35 @@ export class AuthService {
     }
   }
 
-  async getTokenByEmail(email: string) {
-    const user = await this.prismaService.user.findUnique({
-      where: { email },
+  async getTokenByCode(code: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+  }> {
+    const emailAuth = await this.prismaService.emailAuth.findUnique({
+      where: { code },
     });
 
-    if (!user) {
-      throw new NotFoundException('User not found');
+    if (!emailAuth) {
+      throw new NotFoundException('Code Not Found');
     }
+
+    if (!(dayjs().diff(dayjs(emailAuth.createAt)) <= 24 * 60 * 60 * 1000)) {
+      throw new ForbiddenException('Validity Time Expiration');
+    }
+    await this.prismaService.emailAuth.update({
+      data: {
+        used: true,
+      },
+      where: {
+        code,
+      },
+    });
+
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        email: emailAuth.email,
+      },
+    });
 
     return {
       accessToken: this.generateJwtToken(user.id),

@@ -8,14 +8,21 @@ datasource db {
 }
 
 model EmailAuth {
-  id       String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  email    String   @unique
-  code     String   @unique
-  joined   Boolean  @default(false)
-  createAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updateAt DateTime @default(now()) @updatedAt @map("update_at") @db.Timestamptz(6)
+  id            String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email         String
+  code          String        @unique
+  used          Boolean       @default(false)
+  emailAuthType EmailAuthType @map("email_auth_type")
+  createAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updateAt      DateTime      @default(now()) @updatedAt @map("update_at") @db.Timestamptz(6)
 
+  @@unique([email, emailAuthType])
   @@map("email_auth")
+}
+
+enum EmailAuthType {
+  SIGNIN
+  PASSWORD
 }
 
 model User {
