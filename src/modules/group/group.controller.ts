@@ -16,7 +16,7 @@ import { FormDataRequest, MemoryStoredFile } from 'nestjs-form-data';
 
 import { User } from '@/common/decorators/user.decorator';
 
-import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guards';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guard';
 import { CreateGroupDto } from '@/modules/group/dto/create-group.dto';
 import { EnterGroupDto } from '@/modules/group/dto/enter-group.dto';
 import { UpdateGroupNameDto } from '@/modules/group/dto/update-group-name.dto';

@@ -14,7 +14,7 @@ import { FormDataRequest, MemoryStoredFile } from 'nestjs-form-data';
 
 import { User } from '@/common/decorators/user.decorator';
 
-import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guards';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guard';
 import { DazimService } from '@/modules/dazim/dazim.service';
 import { CompleteDazimDto } from '@/modules/dazim/dto/complete-dazim.dto';
 import { CreateDazimDto } from '@/modules/dazim/dto/create-dazim.dto';

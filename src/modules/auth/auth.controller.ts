@@ -19,8 +19,8 @@ import { sendPasswordFindEmailDto } from '@/modules/auth/dto/send-password-find-
 import { SignInDto } from '@/modules/auth/dto/sign-in.dto';
 import { VerifyEmailDto } from '@/modules/auth/dto/verify-email.dto';
 import { verifyPasswordFindCodeDto } from '@/modules/auth/dto/verify-password-find-code.dto';
-import { GoogleAuthGuard } from '@/modules/auth/guards/google.guards';
-import { KakaoAuthGuard } from '@/modules/auth/guards/kakao.guards';
+import { GoogleAuthGuard } from '@/modules/auth/guards/google.guard';
+import { KakaoAuthGuard } from '@/modules/auth/guards/kakao.guard';
 import { EmailService } from '@/modules/email/email.service';
 
 import { resetTokensCookie, setTokensCookie } from '@/utils/token';

@@ -14,7 +14,7 @@ import { Response } from 'express';
 
 import { User } from '@/common/decorators/user.decorator';
 
-import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guards';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guard';
 import { CreateFeedCommentDto } from '@/modules/feed/dto/create-feed-comment.dto';
 import { ToggleReactionFeedDto } from '@/modules/feed/dto/toggle-reaction-feed.dto';
 import { FeedService } from '@/modules/feed/feed.service';

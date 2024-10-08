@@ -15,7 +15,7 @@ import { FormDataRequest, MemoryStoredFile } from 'nestjs-form-data';
 
 import { User } from '@/common/decorators/user.decorator';
 
-import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guards';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guard';
 import { CheckEmailDuplicateDto } from '@/modules/user/dto/check-email-duplicate.dto';
 import { CheckPhoneDuplicateDto } from '@/modules/user/dto/check-phon-duplicate.dto';
 import { CreateProfileDto } from '@/modules/user/dto/create-profile.dto';
