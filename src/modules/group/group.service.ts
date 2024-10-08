@@ -4,10 +4,12 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaService } from '@/modules/prisma/prisma.service';
 import { MemoryStoredFile } from 'nestjs-form-data';
-import { AwsService } from '../aws/aws.service';
 import { v4 as uuid } from 'uuid';
+
+import { AwsService } from '@/modules/aws/aws.service';
+import { PrismaService } from '@/modules/prisma/prisma.service';
+
 import { formatDateTime } from '@/utils/common';
 
 @Injectable()

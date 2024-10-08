@@ -1,8 +1,9 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
-import { PrismaService } from '@/modules/prisma/prisma.service';
 import * as shortId from 'shortid';
+
+import { PrismaService } from '@/modules/prisma/prisma.service';
 
 @Injectable()
 export class EmailService {

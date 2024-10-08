@@ -6,10 +6,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import * as dayjs from 'dayjs';
-import * as bcrypt from 'bcrypt';
-import { PrismaService } from '@/modules/prisma/prisma.service';
 import { Provider } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import * as dayjs from 'dayjs';
+
+import { PrismaService } from '@/modules/prisma/prisma.service';
 
 @Injectable()
 export class AuthService {

@@ -5,22 +5,20 @@ import {
   HttpStatus,
   Param,
   Post,
-  Put,
   Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
-
-import { User } from '@/common/decorators/user.decorator';
-import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guards';
-
-import { DazimService } from './dazim.service';
-
 import { Response } from 'express';
 import { FormDataRequest, MemoryStoredFile } from 'nestjs-form-data';
-import { CreateDazimDto } from './dto/create-dazim.dto';
-import { CompleteDazimDto } from './dto/complete-dazim.dto';
-import { GetDazimsDto } from './dto/get-dazims.dto';
+
+import { User } from '@/common/decorators/user.decorator';
+
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guards';
+import { DazimService } from '@/modules/dazim/dazim.service';
+import { CompleteDazimDto } from '@/modules/dazim/dto/complete-dazim.dto';
+import { CreateDazimDto } from '@/modules/dazim/dto/create-dazim.dto';
+import { GetDazimsDto } from '@/modules/dazim/dto/get-dazims.dto';
 
 @Controller()
 export class DazimController {

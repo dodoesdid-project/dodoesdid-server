@@ -1,23 +1,25 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
-import { validationSchema } from './config/validation-schema';
-import { AuthModule } from './modules/auth/auth.module';
-import { HealthModule } from './modules/health/health.module';
-import { PrismaModule } from './modules/prisma/prisma.module';
-import appConfig from './config/app/app.config';
-import databaseConfig from './config/database/database.config';
-import emailConfig from './config/email/email.config';
-import jwtConfig from './config/jwt/jwt.config';
-import socialConfig from './config/social/social.config';
-import { UserModule } from './modules/user/user.module';
-import awsConfig from './config/aws/aws.config';
-import { NestjsFormDataModule } from 'nestjs-form-data';
-import { AwsModule } from './modules/aws/aws.module';
-import { GroupModule } from './modules/group/group.module';
-import { DazimModule } from './modules/dazim/dazim.module';
-import { FeedModule } from './modules/feed/feed.module';
+
+import { AppController } from '@/app.controller';
+import { AppService } from '@/app.service';
+
+import appConfig from '@/config/app/app.config';
+import awsConfig from '@/config/aws/aws.config';
+import databaseConfig from '@/config/database/database.config';
+import emailConfig from '@/config/email/email.config';
+import jwtConfig from '@/config/jwt/jwt.config';
+import socialConfig from '@/config/social/social.config';
+import validationSchema from '@/config/validation-schema';
+
+import { AuthModule } from '@/modules/auth/auth.module';
+import { AwsModule } from '@/modules/aws/aws.module';
+import { DazimModule } from '@/modules/dazim/dazim.module';
+import { FeedModule } from '@/modules/feed/feed.module';
+import { GroupModule } from '@/modules/group/group.module';
+import { HealthModule } from '@/modules/health/health.module';
+import { PrismaModule } from '@/modules/prisma/prisma.module';
+import { UserModule } from '@/modules/user/user.module';
 
 @Module({
   imports: [

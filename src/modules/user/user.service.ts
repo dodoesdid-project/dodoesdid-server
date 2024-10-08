@@ -5,13 +5,15 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaService } from '@/modules/prisma/prisma.service';
-import * as dayjs from 'dayjs';
 import * as bcrypt from 'bcrypt';
-import { User } from '@/common/decorators/user.decorator';
+import * as dayjs from 'dayjs';
 import { MemoryStoredFile } from 'nestjs-form-data';
-import { AwsService } from '../aws/aws.service';
 import { v4 as uuid } from 'uuid';
+
+import { User } from '@/common/decorators/user.decorator';
+
+import { AwsService } from '@/modules/aws/aws.service';
+import { PrismaService } from '@/modules/prisma/prisma.service';
 
 @Injectable()
 export class UserService {

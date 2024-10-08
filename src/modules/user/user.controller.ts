@@ -10,22 +10,21 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-
-import { User } from '@/common/decorators/user.decorator';
-import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guards';
-
-import { UserService } from './user.service';
-import { SignUpDto } from './dto/sign-up.dto';
-
 import { Response } from 'express';
 import { FormDataRequest, MemoryStoredFile } from 'nestjs-form-data';
-import { CreateProfileDto } from './dto/create-profile.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
-import { UpdatePasswordDto } from './dto/update-password.dto';
-import { CheckEmailDuplicateDto } from './dto/check-email-duplicate.dto';
-import { CheckPhoneDuplicateDto } from './dto/check-phon-duplicate.dto';
-import { UpdateNickNameDto } from './dto/update-nick-name.dto';
-import { withdrawalDto } from './dto/withdrawal.dto';
+
+import { User } from '@/common/decorators/user.decorator';
+
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guards';
+import { CheckEmailDuplicateDto } from '@/modules/user/dto/check-email-duplicate.dto';
+import { CheckPhoneDuplicateDto } from '@/modules/user/dto/check-phon-duplicate.dto';
+import { CreateProfileDto } from '@/modules/user/dto/create-profile.dto';
+import { SignUpDto } from '@/modules/user/dto/sign-up.dto';
+import { UpdateNickNameDto } from '@/modules/user/dto/update-nick-name.dto';
+import { UpdatePasswordDto } from '@/modules/user/dto/update-password.dto';
+import { UpdateProfileDto } from '@/modules/user/dto/update-profile.dto';
+import { withdrawalDto } from '@/modules/user/dto/withdrawal.dto';
+import { UserService } from '@/modules/user/user.service';
 
 @Controller('user')
 export class UserController {

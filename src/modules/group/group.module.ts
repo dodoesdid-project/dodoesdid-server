@@ -1,12 +1,11 @@
 import { Module } from '@nestjs/common';
+import { NestjsFormDataModule } from 'nestjs-form-data';
 
 import { JwtStrategy } from '@/modules/auth/strategies/jwt.strategy';
-
-import { GroupController } from './group.controller';
-import { GroupService } from './group.service';
-import { NestjsFormDataModule } from 'nestjs-form-data';
-import { AwsService } from '../aws/aws.service';
-import { UserService } from '../user/user.service';
+import { AwsService } from '@/modules/aws/aws.service';
+import { GroupController } from '@/modules/group/group.controller';
+import { GroupService } from '@/modules/group/group.service';
+import { UserService } from '@/modules/user/user.service';
 
 @Module({
   imports: [NestjsFormDataModule],

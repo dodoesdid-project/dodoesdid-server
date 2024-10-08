@@ -10,15 +10,14 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 
 import { User } from '@/common/decorators/user.decorator';
+
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guards';
-
-import { FeedService } from './feed.service';
-
-import { Response } from 'express';
-import { ToggleReactionFeedDto } from './dto/toggle-reaction-feed.dto';
-import { CreateFeedCommentDto } from './dto/create-feed-comment.dto';
+import { CreateFeedCommentDto } from '@/modules/feed/dto/create-feed-comment.dto';
+import { ToggleReactionFeedDto } from '@/modules/feed/dto/toggle-reaction-feed.dto';
+import { FeedService } from '@/modules/feed/feed.service';
 
 @Controller()
 export class FeedController {
@@ -87,7 +86,7 @@ export class FeedController {
     @Body() { content }: CreateFeedCommentDto,
     @Res() res: Response,
   ) {
-    const count = await this.feedService.createFeedComment({
+    await this.feedService.createFeedComment({
       userId: user.id,
       feedId,
       content,
@@ -125,7 +124,7 @@ export class FeedController {
     @Body() { content }: CreateFeedCommentDto,
     @Res() res: Response,
   ) {
-    const updatedFeedComment = await this.feedService.updateFeedComment({
+    await this.feedService.updateFeedComment({
       userId: user.id,
       commentId,
       content,

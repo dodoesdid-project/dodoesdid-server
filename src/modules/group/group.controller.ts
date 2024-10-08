@@ -11,20 +11,19 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-
-import { User } from '@/common/decorators/user.decorator';
-import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guards';
-
-import { GroupService } from './group.service';
-
 import { Response } from 'express';
 import { FormDataRequest, MemoryStoredFile } from 'nestjs-form-data';
-import { CreateGroupDto } from './dto/create-group.dto';
-import { EnterGroupDto } from './dto/enter-group.dto';
-import { UpdateGroupsOrderDto } from './dto/update-groups-order.dto';
-import { UpdateGroupNameDto } from './dto/update-group-name.dto';
-import { UpdateGroupThumbnailDto } from './dto/update-group-thumbnail.dto';
-import { UpdateGroupNoticeDto } from './dto/update-group-notice.dto';
+
+import { User } from '@/common/decorators/user.decorator';
+
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guards';
+import { CreateGroupDto } from '@/modules/group/dto/create-group.dto';
+import { EnterGroupDto } from '@/modules/group/dto/enter-group.dto';
+import { UpdateGroupNameDto } from '@/modules/group/dto/update-group-name.dto';
+import { UpdateGroupNoticeDto } from '@/modules/group/dto/update-group-notice.dto';
+import { UpdateGroupThumbnailDto } from '@/modules/group/dto/update-group-thumbnail.dto';
+import { UpdateGroupsOrderDto } from '@/modules/group/dto/update-groups-order.dto';
+import { GroupService } from '@/modules/group/group.service';
 
 @Controller()
 export class GroupController {

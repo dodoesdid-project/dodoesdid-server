@@ -1,6 +1,6 @@
 import * as Joi from 'joi';
 
-export const validationSchema = Joi.object({
+const validationSchema = Joi.object({
   NODE_ENV: Joi.string().valid('local', 'development', 'production').required(),
   APP_HOST: Joi.string().required(),
   APP_PORT: Joi.number().required(),
@@ -19,3 +19,5 @@ export const validationSchema = Joi.object({
   AWS_S3_ACCESS_KEY: Joi.string().required(),
   AWS_S3_SECRET_ACCESS_KEY: Joi.string().required(),
 });
+
+export default validationSchema;

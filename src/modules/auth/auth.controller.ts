@@ -1,27 +1,29 @@
 import {
   Body,
   Controller,
-  ForbiddenException,
   Get,
   HttpStatus,
   Post,
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { SendEmailVerificationCodeDto } from './dto/send-email-verification-code.dto';
-import { EmailService } from '../email/email.service';
-import { Response, Send } from 'express';
-import { verifyPasswordFindCodeDto } from './dto/verify-password-find-code.dto';
-import { AuthService } from './auth.service';
-import { SignInDto } from './dto/sign-in.dto';
-import { resetTokensCookie, setTokensCookie } from '@/utils/token';
-import { KakaoAuthGuard } from './guards/kakao.guards';
-import { SocialUser } from '@/common/decorators/social-user.decorator';
 import { ConfigService } from '@nestjs/config';
-import { GoogleAuthGuard } from './guards/google.guards';
-import { FindEmailDto } from './dto/find-email.dto';
-import { sendPasswordFindEmailDto } from './dto/send-password-find-email.dto';
-import { VerifyEmailDto } from './dto/verify-email.dto';
+import { Response } from 'express';
+
+import { SocialUser } from '@/common/decorators/social-user.decorator';
+
+import { AuthService } from '@/modules/auth/auth.service';
+import { FindEmailDto } from '@/modules/auth/dto/find-email.dto';
+import { SendEmailVerificationCodeDto } from '@/modules/auth/dto/send-email-verification-code.dto';
+import { sendPasswordFindEmailDto } from '@/modules/auth/dto/send-password-find-email.dto';
+import { SignInDto } from '@/modules/auth/dto/sign-in.dto';
+import { VerifyEmailDto } from '@/modules/auth/dto/verify-email.dto';
+import { verifyPasswordFindCodeDto } from '@/modules/auth/dto/verify-password-find-code.dto';
+import { GoogleAuthGuard } from '@/modules/auth/guards/google.guards';
+import { KakaoAuthGuard } from '@/modules/auth/guards/kakao.guards';
+import { EmailService } from '@/modules/email/email.service';
+
+import { resetTokensCookie, setTokensCookie } from '@/utils/token';
 
 @Controller('auth')
 export class AuthController {

@@ -1,4 +1,4 @@
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { DocumentBuilder } from '@nestjs/swagger';
 
 export class BaseAPIDocumentation {
   public builder = new DocumentBuilder();
