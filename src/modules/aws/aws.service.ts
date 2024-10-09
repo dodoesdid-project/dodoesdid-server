@@ -6,7 +6,7 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 export class AwsService {
   private s3Client: S3Client;
 
-  constructor(private configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     const aws = this.configService.get('aws');
     this.s3Client = new S3Client({
       region: aws.region,

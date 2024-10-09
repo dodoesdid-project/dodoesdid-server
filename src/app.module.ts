@@ -14,8 +14,8 @@ import validationSchema from '@/config/validation-schema';
 
 import { AuthModule } from '@/modules/auth/auth.module';
 import { AwsModule } from '@/modules/aws/aws.module';
+import { CommentModule } from '@/modules/comment/comment.module';
 import { DazimModule } from '@/modules/dazim/dazim.module';
-import { FeedModule } from '@/modules/feed/feed.module';
 import { GroupModule } from '@/modules/group/group.module';
 import { HealthModule } from '@/modules/health/health.module';
 import { PrismaModule } from '@/modules/prisma/prisma.module';
@@ -38,12 +38,12 @@ import { UserModule } from '@/modules/user/user.module';
     }),
     HealthModule,
     PrismaModule,
+    AwsModule,
     AuthModule,
     UserModule,
-    AwsModule,
     GroupModule,
     DazimModule,
-    FeedModule,
+    CommentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

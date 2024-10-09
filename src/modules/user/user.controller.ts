@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   HttpStatus,
   Patch,
@@ -26,7 +25,7 @@ import { UpdateProfileDto } from '@/modules/user/dto/update-profile.dto';
 import { withdrawalDto } from '@/modules/user/dto/withdrawal.dto';
 import { UserService } from '@/modules/user/user.service';
 
-@Controller('user')
+@Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
@@ -47,7 +46,7 @@ export class UserController {
     });
   }
 
-  @Post('email-duplicate-check')
+  @Post('/email-duplicate-check')
   async checkEmailDuplicate(
     @Body() { email }: CheckEmailDuplicateDto,
     @Res() res: Response,
@@ -55,7 +54,7 @@ export class UserController {
     await this.userService.checkDuplicateEmail(email);
     res.status(HttpStatus.NO_CONTENT).send();
   }
-  @Post('phone-duplicate-check')
+  @Post('/phone-duplicate-check')
   async checkPhoneDuplicate(
     @Body() { phone }: CheckPhoneDuplicateDto,
     @Res() res: Response,
@@ -71,8 +70,8 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('/me/profile')
   @FormDataRequest({ storage: MemoryStoredFile })
+  @Post('/me/profile')
   async createProfile(
     @User() user: User,
     @Body() { thumbnail, nickName }: CreateProfileDto,
@@ -153,7 +152,7 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Delete('/me/withdrawal')
+  @Post('/me/withdrawal')
   async withdrawal(
     @User() user: User,
     @Body() { withdrawalReason }: withdrawalDto,

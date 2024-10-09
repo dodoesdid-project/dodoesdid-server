@@ -2,7 +2,6 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { MemoryStoredFile } from 'nestjs-form-data';
 import { v4 as uuid } from 'uuid';
@@ -15,10 +14,11 @@ import { formatDateTime } from '@/utils/common';
 @Injectable()
 export class GroupService {
   constructor(
-    private prismaService: PrismaService,
-    private awsService: AwsService,
+    private readonly prismaService: PrismaService,
+    private readonly awsService: AwsService,
   ) {}
-  async checkGroupExistenceAndMembership({
+
+  async checkIsUserInGroup({
     userId,
     groupId,
   }: {
@@ -44,9 +44,7 @@ export class GroupService {
       },
     });
 
-    if (!groupsOnUsers) {
-      throw new UnauthorizedException('Not a group member');
-    }
+    return !!groupsOnUsers;
   }
 
   async createGroup({
@@ -127,17 +125,16 @@ export class GroupService {
     });
   }
 
-  async getGroup({ userId, groupId }: { userId: string; groupId: string }) {
-    await this.checkGroupExistenceAndMembership({
-      userId,
-      groupId,
-    });
-
+  async getGroupById(id: string) {
     const group = await this.prismaService.group.findUnique({
       where: {
-        id: groupId,
+        id,
       },
     });
+
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
 
     return {
       id: group.id,
@@ -147,6 +144,41 @@ export class GroupService {
       notice: group.notice,
       createAt: formatDateTime(group.createAt),
       updateAt: formatDateTime(group.updateAt),
+    };
+  }
+
+  async getGroupByDazimId(id: string) {
+    const dazim = await this.prismaService.dazim.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        group: {
+          select: {
+            id: true,
+            name: true,
+            thumbnail: true,
+            inviteCode: true,
+            notice: true,
+            createAt: true,
+            updateAt: true,
+          },
+        },
+      },
+    });
+
+    if (!dazim) {
+      throw new NotFoundException('Dazim not Found');
+    }
+
+    return {
+      id: dazim.group.id,
+      name: dazim.group.name,
+      thumbnail: dazim.group.thumbnail,
+      inviteCode: dazim.group.inviteCode,
+      notice: dazim.group.notice,
+      createAt: formatDateTime(dazim.group.createAt),
+      updateAt: formatDateTime(dazim.group.updateAt),
     };
   }
 
@@ -214,38 +246,24 @@ export class GroupService {
     );
   }
 
-  async updateGroupName({
-    userId,
-    groupId,
-    name,
-  }: {
-    userId: string;
-    groupId: string;
-    name: string;
-  }) {
-    await this.checkGroupExistenceAndMembership({ userId, groupId });
-
+  async updateGroupName({ id, name }: { id: string; name: string }) {
     await this.prismaService.group.update({
       data: {
         name,
       },
       where: {
-        id: groupId,
+        id,
       },
     });
   }
 
   async updateGroupThumbnail({
-    userId,
-    groupId,
+    id,
     thumbnail,
   }: {
-    userId: string;
-    groupId: string;
+    id: string;
     thumbnail: MemoryStoredFile;
   }) {
-    await this.checkGroupExistenceAndMembership({ userId, groupId });
-
     const uploadedThumbnail = await this.awsService.imageUploadToS3({
       buffer: thumbnail.buffer,
       fileName: `group/thumbnail/${uuid()}`,
@@ -257,35 +275,23 @@ export class GroupService {
         thumbnail: uploadedThumbnail,
       },
       where: {
-        id: groupId,
+        id,
       },
     });
   }
 
-  async updateGroupNotice({
-    userId,
-    groupId,
-    notice,
-  }: {
-    userId: string;
-    groupId: string;
-    notice: string;
-  }) {
-    await this.checkGroupExistenceAndMembership({ userId, groupId });
-
+  async updateGroupNotice({ id, notice }: { id: string; notice: string }) {
     await this.prismaService.group.update({
       data: {
         notice,
       },
       where: {
-        id: groupId,
+        id,
       },
     });
   }
 
   async leaveGroup({ userId, groupId }: { userId: string; groupId: string }) {
-    await this.checkGroupExistenceAndMembership({ userId, groupId });
-
     await this.prismaService.groupsOnUsers.delete({
       where: {
         userId_groupId: {
@@ -294,5 +300,19 @@ export class GroupService {
         },
       },
     });
+
+    const groupOnUserCount = await this.prismaService.groupsOnUsers.count({
+      where: {
+        groupId,
+      },
+    });
+
+    if (groupOnUserCount === 0) {
+      await this.prismaService.group.delete({
+        where: {
+          id: groupId,
+        },
+      });
+    }
   }
 }

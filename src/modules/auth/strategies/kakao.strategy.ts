@@ -5,7 +5,7 @@ import { Strategy } from 'passport-kakao';
 
 @Injectable()
 export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
-  constructor(protected configService: ConfigService) {
+  constructor(protected readonly configService: ConfigService) {
     super({
       clientID: configService.get<string>('social.kakaoClientId'),
       callbackURL: `${configService.get<string>('app.url')}/api/v1/auth/kakao-sign-in/redirect`,

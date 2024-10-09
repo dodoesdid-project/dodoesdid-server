@@ -15,8 +15,8 @@ import { PrismaService } from '@/modules/prisma/prisma.service';
 @Injectable()
 export class AuthService {
   constructor(
-    private prismaService: PrismaService,
-    private jwtService: JwtService,
+    private readonly prismaService: PrismaService,
+    private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -92,7 +92,7 @@ export class AuthService {
       throw new NotFoundException('Code Not Found');
     }
 
-    if (!(dayjs().diff(dayjs(emailAuth.createAt)) <= 24 * 60 * 60 * 1000)) {
+    if (!(dayjs().diff(dayjs(emailAuth.updateAt)) <= 24 * 60 * 60 * 1000)) {
       throw new ForbiddenException('Validity Time Expiration');
     }
   }
@@ -109,7 +109,7 @@ export class AuthService {
       throw new NotFoundException('Code Not Found');
     }
 
-    if (!(dayjs().diff(dayjs(emailAuth.createAt)) <= 24 * 60 * 60 * 1000)) {
+    if (!(dayjs().diff(dayjs(emailAuth.updateAt)) <= 24 * 60 * 60 * 1000)) {
       throw new ForbiddenException('Validity Time Expiration');
     }
     await this.prismaService.emailAuth.update({

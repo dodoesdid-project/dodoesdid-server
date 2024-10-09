@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -15,22 +16,32 @@ import { Response } from 'express';
 import { FormDataRequest, MemoryStoredFile } from 'nestjs-form-data';
 
 import { User } from '@/common/decorators/user.decorator';
+import { IdParamDto } from '@/common/dto/id-param.dto';
 
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt.guard';
+import { DazimService } from '@/modules/dazim/dazim.service';
 import { CreateGroupDto } from '@/modules/group/dto/create-group.dto';
+import { CreateGroupDazimDto } from '@/modules/group/dto/create-group-dazim.dto';
 import { EnterGroupDto } from '@/modules/group/dto/enter-group.dto';
+import { GetGroupUsersQueryDto as GetGroupUsersQueryDto } from '@/modules/group/dto/get-group-users-query.dto';
 import { UpdateGroupNameDto } from '@/modules/group/dto/update-group-name.dto';
 import { UpdateGroupNoticeDto } from '@/modules/group/dto/update-group-notice.dto';
 import { UpdateGroupThumbnailDto } from '@/modules/group/dto/update-group-thumbnail.dto';
 import { UpdateGroupsOrderDto } from '@/modules/group/dto/update-groups-order.dto';
 import { GroupService } from '@/modules/group/group.service';
+import { GroupAuthGuard } from '@/modules/group/guards/group-auth.guard';
+import { UserService } from '@/modules/user/user.service';
 
-@Controller()
+@Controller('groups')
 export class GroupController {
-  constructor(private readonly groupService: GroupService) {}
+  constructor(
+    private readonly groupService: GroupService,
+    private readonly dazimService: DazimService,
+    private readonly userService: UserService,
+  ) {}
   @UseGuards(JwtAuthGuard)
   @FormDataRequest({ storage: MemoryStoredFile })
-  @Post('group')
+  @Post()
   async createGroup(
     @User() user: User,
     @Body() { name, thumbnail }: CreateGroupDto,
@@ -48,7 +59,7 @@ export class GroupController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('group/enter')
+  @Post('/enter')
   async EnterGroup(
     @User() user: User,
     @Body() { inviteCode }: EnterGroupDto,
@@ -59,23 +70,16 @@ export class GroupController {
     res.status(HttpStatus.NO_CONTENT).send();
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('/group/:groupId')
-  async getGroup(
-    @Param() { groupId }: { groupId: string },
-    @User() user: User,
-    @Res() res: Response,
-  ) {
-    const group = await this.groupService.getGroup({
-      userId: user.id,
-      groupId,
-    });
+  @UseGuards(JwtAuthGuard, GroupAuthGuard)
+  @Get('/:id')
+  async getGroup(@Param() { id }: IdParamDto, @Res() res: Response) {
+    const group = await this.groupService.getGroupById(id);
 
     res.status(HttpStatus.OK).send(group);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('/groups')
+  @Get()
   async getGroups(@User() user: User, @Res() res: Response) {
     const groups = await this.groupService.getGroupsByUserId(user.id);
 
@@ -83,7 +87,7 @@ export class GroupController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Put('/groups/order')
+  @Put('/order')
   async updateGroupsOrder(
     @User() user: User,
     @Body() { ids }: UpdateGroupsOrderDto,
@@ -97,70 +101,100 @@ export class GroupController {
     res.status(HttpStatus.OK).send(groups);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Patch('/group/:groupId/name')
+  @UseGuards(JwtAuthGuard, GroupAuthGuard)
+  @Patch('/:id/name')
   async updateGroupName(
-    @User() user: User,
-    @Param() { groupId }: { groupId: string },
+    @Param() { id }: IdParamDto,
     @Body() { name }: UpdateGroupNameDto,
     @Res() res: Response,
   ) {
     await this.groupService.updateGroupName({
-      userId: user.id,
-      groupId,
+      id,
       name,
     });
 
     res.status(HttpStatus.NO_CONTENT).send();
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, GroupAuthGuard)
   @FormDataRequest({ storage: MemoryStoredFile })
-  @Patch('/group/:groupId/thumbnail')
+  @Patch('/:id/thumbnail')
   async updateGroupThumbnail(
-    @User() user: User,
-    @Param() { groupId }: { groupId: string },
+    @Param() { id }: IdParamDto,
     @Body() { thumbnail }: UpdateGroupThumbnailDto,
     @Res() res: Response,
   ) {
     await this.groupService.updateGroupThumbnail({
-      userId: user.id,
-      groupId,
+      id,
       thumbnail,
     });
 
     res.status(HttpStatus.NO_CONTENT).send();
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Patch('/group/:groupId/notice')
+  @UseGuards(JwtAuthGuard, GroupAuthGuard)
+  @Patch('/:id/notice')
   async updateGroup(
-    @User() user: User,
-    @Param() { groupId }: { groupId: string },
+    @Param() { id }: IdParamDto,
     @Body() { notice }: UpdateGroupNoticeDto,
     @Res() res: Response,
   ) {
     await this.groupService.updateGroupNotice({
-      userId: user.id,
-      groupId,
+      id,
       notice,
     });
 
     res.status(HttpStatus.NO_CONTENT).send();
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Delete('/group/:groupId/leave')
+  @UseGuards(JwtAuthGuard, GroupAuthGuard)
+  @Delete('/:id/leave')
   async leaveGroup(
     @User() user: User,
-    @Param() { groupId }: { groupId: string },
+    @Param() { id }: IdParamDto,
     @Res() res: Response,
   ) {
     await this.groupService.leaveGroup({
       userId: user.id,
-      groupId,
+      groupId: id,
     });
 
     res.status(HttpStatus.NO_CONTENT).send();
+  }
+
+  @UseGuards(JwtAuthGuard, GroupAuthGuard)
+  @Get('/:id/users')
+  async getGroupUsers(
+    @User() user: User,
+    @Param() { id }: IdParamDto,
+    @Query() { dazimCreateAt }: GetGroupUsersQueryDto,
+    @Res() res: Response,
+  ) {
+    const users = await this.userService.getUsersByGroupId({
+      userId: user.id,
+      groupId: id,
+      dazimCreateAt,
+    });
+
+    res.status(HttpStatus.OK).send(users);
+  }
+
+  @UseGuards(JwtAuthGuard, GroupAuthGuard)
+  @Post('/:id/dazim')
+  async createDazim(
+    @User() user: User,
+    @Param() { id }: IdParamDto,
+    @Body() { content }: CreateGroupDazimDto,
+    @Res() res: Response,
+  ) {
+    await this.dazimService.createDazim({
+      userId: user.id,
+      groupId: id,
+      content,
+    });
+
+    res
+      .status(HttpStatus.CREATED)
+      .send({ message: 'Create Dazim Successfully' });
   }
 }

@@ -1,8 +1,6 @@
 import { IsString } from 'class-validator';
 
-export class CreateDazimDto {
-  @IsString()
-  readonly groupId: string;
+export class updateCommentDto {
   @IsString()
   readonly content: string;
 }

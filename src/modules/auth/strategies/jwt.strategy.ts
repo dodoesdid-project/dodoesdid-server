@@ -8,8 +8,8 @@ import { UserService } from '@/modules/user/user.service';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    protected configService: ConfigService,
-    private userService: UserService,
+    protected readonly configService: ConfigService,
+    private readonly userService: UserService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([

@@ -2,30 +2,197 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
+import { ReactionType } from '@prisma/client';
 import * as dayjs from 'dayjs';
-import * as timezone from 'dayjs/plugin/timezone';
-import * as utc from 'dayjs/plugin/utc';
 import { MemoryStoredFile } from 'nestjs-form-data';
 import { v4 as uuid } from 'uuid';
 
 import { AwsService } from '@/modules/aws/aws.service';
-import { GroupService } from '@/modules/group/group.service';
 import { PrismaService } from '@/modules/prisma/prisma.service';
 
-import { formatDateTime } from '@/utils/common';
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import { formatDateTime, getTimeAgo } from '@/utils/common';
 
 @Injectable()
 export class DazimService {
   constructor(
-    private prismaService: PrismaService,
-    private awsService: AwsService,
-    private groupService: GroupService,
+    private readonly prismaService: PrismaService,
+    private readonly awsService: AwsService,
   ) {}
+
+  async getDazims({
+    userId,
+    isSuccess,
+  }: {
+    userId: string;
+    isSuccess?: boolean;
+  }) {
+    const dazims = await this.prismaService.dazim.findMany({
+      where: {
+        group: {
+          groupsOnUsers: {
+            some: {
+              userId,
+            },
+          },
+        },
+        isSuccess,
+      },
+      select: {
+        id: true,
+        groupId: true,
+        content: true,
+        photo: true,
+        isSuccess: true,
+        createAt: true,
+        updateAt: true,
+        user: {
+          select: {
+            id: true,
+            userProfile: {
+              select: {
+                nickName: true,
+                thumbnail: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            dazimComments: true,
+            dazimReactions: true,
+          },
+        },
+      },
+    });
+
+    return dazims.map((dazim) => ({
+      id: dazim.id,
+      groupId: dazim.groupId,
+      content: dazim.content,
+      photo: dazim.photo,
+      isSuccess: dazim.isSuccess,
+      createAt: formatDateTime(dazim.createAt),
+      updateAt: formatDateTime(dazim.updateAt),
+      timeAge: getTimeAgo(dazim.updateAt),
+      user: {
+        id: dazim.user.id,
+        profile: dazim.user.userProfile && {
+          nickName: dazim.user.userProfile.nickName,
+          thumbnail: dazim.user.userProfile.thumbnail,
+        },
+      },
+      commentCount: dazim._count.dazimComments,
+      reactionCount: dazim._count.dazimReactions,
+    }));
+  }
+
+  async getDazim({ userId, dazimId }: { userId: string; dazimId: string }) {
+    const dazim = await this.prismaService.dazim.findUnique({
+      where: {
+        id: dazimId,
+        group: {
+          dazims: {
+            some: {
+              userId,
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        groupId: true,
+        content: true,
+        photo: true,
+        createAt: true,
+        updateAt: true,
+        user: {
+          select: {
+            id: true,
+            userProfile: {
+              select: {
+                nickName: true,
+                thumbnail: true,
+              },
+            },
+          },
+        },
+        dazimComments: true,
+      },
+    });
+
+    if (!dazim) {
+      throw new NotFoundException('Dazim not found');
+    }
+
+    const dazimReactionGroupBy = await this.prismaService.dazimReaction.groupBy(
+      {
+        by: ['reactionType'],
+        where: {
+          dazimId: dazimId,
+        },
+        _count: {
+          reactionType: true,
+        },
+      },
+    );
+
+    const reactionCounts = dazimReactionGroupBy.reduce(
+      (acc, { reactionType, _count }) => {
+        acc[`${reactionType.toLowerCase()}Count`] = _count.reactionType;
+        return acc;
+      },
+      {
+        fireCount: 0,
+        starCount: 0,
+        congratulationsCount: 0,
+        heartCount: 0,
+        musicCount: 0,
+      },
+    );
+
+    const dazimReactions = await this.prismaService.dazimReaction.findMany({
+      where: {
+        dazimId: dazimId,
+        userId,
+      },
+    });
+
+    const isMeReactions = dazimReactions.reduce(
+      (acc, { reactionType }) => {
+        acc[
+          `isMeReaction${reactionType.charAt(0)}${reactionType.slice(1).toLowerCase()}`
+        ] = true;
+        return acc;
+      },
+      {
+        isMeReactionFire: false,
+        isMeReactionStar: false,
+        isMeReactionCongratulations: false,
+        isMeReactionHeart: false,
+        isMeReactionMusic: false,
+      },
+    );
+
+    return {
+      id: dazim.id,
+      groupId: dazim.groupId,
+      content: dazim.content,
+      photo: dazim.photo,
+      createAt: formatDateTime(dazim.createAt),
+      updateAt: formatDateTime(dazim.updateAt),
+      timeAge: getTimeAgo(dazim.updateAt),
+      user: {
+        id: dazim.id,
+        profile: dazim.user.userProfile && {
+          nickName: dazim.user.userProfile.nickName,
+          thumbnail: dazim.user.userProfile.thumbnail,
+        },
+      },
+      ...reactionCounts,
+      ...isMeReactions,
+    };
+  }
 
   async createDazim({
     userId,
@@ -36,12 +203,6 @@ export class DazimService {
     groupId: string;
     content: string;
   }) {
-    // check if group exists
-    await this.groupService.checkGroupExistenceAndMembership({
-      userId,
-      groupId,
-    });
-
     // check if dazim created today
     const dazim = await this.prismaService.dazim.findFirst({
       where: {
@@ -53,6 +214,7 @@ export class DazimService {
         },
       },
     });
+
     if (dazim) {
       throw new ConflictException('Already Created Dazim today');
     }
@@ -66,6 +228,75 @@ export class DazimService {
     });
   }
 
+  async toggleReactionDazim({
+    userId,
+    dazimId,
+    reactionType,
+  }: {
+    userId: string;
+    dazimId: string;
+    reactionType: ReactionType;
+  }): Promise<{
+    count: number;
+    isMeReactionType: boolean;
+  }> {
+    const dazimReaction = await this.prismaService.dazimReaction.findUnique({
+      where: {
+        dazimId_reactionType_userId: {
+          userId,
+          dazimId: dazimId,
+          reactionType,
+        },
+      },
+    });
+
+    if (!dazimReaction) {
+      await this.prismaService.dazimReaction.create({
+        data: {
+          userId,
+          reactionType,
+          dazimId: dazimId,
+        },
+      });
+    } else {
+      await this.prismaService.dazimReaction.delete({
+        where: {
+          dazimId_reactionType_userId: {
+            userId,
+            reactionType,
+            dazimId: dazimId,
+          },
+        },
+      });
+    }
+
+    const count = await this.prismaService.dazimReaction.count({
+      where: {
+        reactionType,
+        dazimId: dazimId,
+      },
+    });
+
+    return {
+      count,
+      isMeReactionType: !!!dazimReaction,
+    };
+  }
+
+  async checkIsUserWrittenDazim({ userId, dazimId }): Promise<boolean> {
+    const dazim = await this.prismaService.dazim.findUnique({
+      where: {
+        id: dazimId,
+      },
+    });
+
+    if (!dazim) {
+      throw new NotFoundException('Dazim not found');
+    }
+
+    return userId === dazim.userId;
+  }
+
   async completeDazim({
     userId,
     dazimId,
@@ -75,12 +306,6 @@ export class DazimService {
     dazimId: string;
     photo: MemoryStoredFile;
   }) {
-    // check if it's mine
-    const dazim = await this.getDazimById(dazimId);
-    if (userId !== dazim.userId) {
-      throw new UnauthorizedException();
-    }
-
     const uploadedPhoto = await this.awsService.imageUploadToS3({
       buffer: photo.buffer,
       fileName: `user/${userId}/dazim/${uuid()}`,
@@ -97,120 +322,5 @@ export class DazimService {
         isSuccess: true,
       },
     });
-  }
-
-  async getDazimById(id: string): Promise<{
-    id: string;
-    userId: string;
-    groupId: string;
-    content: string;
-    photo: string;
-    isSuccess: boolean;
-    createAt: string;
-    updateAt: string;
-  }> {
-    const dazim = await this.prismaService.dazim.findUnique({
-      where: {
-        id,
-      },
-    });
-
-    if (!dazim) {
-      throw new NotFoundException('Not found Dazim');
-    }
-
-    return {
-      id: dazim.id,
-      userId: dazim.userId,
-      groupId: dazim.groupId,
-      content: dazim.content,
-      photo: dazim.photo,
-      isSuccess: dazim.isSuccess,
-      createAt: formatDateTime(dazim.createAt),
-      updateAt: formatDateTime(dazim.updateAt),
-    };
-  }
-
-  async getDazims({
-    userId,
-    groupId,
-    date,
-  }: {
-    userId: string;
-    groupId: string;
-    date: string;
-  }) {
-    // check if member of group
-    await this.groupService.checkGroupExistenceAndMembership({
-      userId,
-      groupId,
-    });
-
-    const groupsOnUsers = await this.prismaService.groupsOnUsers.findMany({
-      where: { groupId },
-      select: {
-        user: {
-          select: {
-            id: true,
-            userProfile: {
-              select: {
-                nickName: true,
-                thumbnail: true,
-              },
-            },
-            dazims: {
-              where: {
-                createAt: {
-                  gte: dayjs(date).startOf('day').toDate(),
-                  lte: dayjs(date).endOf('day').toDate(),
-                },
-                groupId,
-              },
-              select: {
-                id: true,
-                groupId: true,
-                content: true,
-                photo: true,
-                isSuccess: true,
-                createAt: true,
-                updateAt: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return (
-      groupsOnUsers
-        .map((groupsOnUser) => {
-          const { user } = groupsOnUser;
-          const dazim = user.dazims[0] || null;
-
-          return {
-            id: user.id,
-            isMe: user.id === userId,
-            profile: user.userProfile && {
-              nickName: user.userProfile.nickName,
-              thumbnail: user.userProfile.thumbnail,
-            },
-            dazim: dazim && {
-              id: dazim.id,
-              groupId: dazim.groupId,
-              content: dazim.content,
-              photo: dazim.photo,
-              isSuccess: dazim.isSuccess,
-              createAt: formatDateTime(dazim.createAt),
-              updateAt: formatDateTime(dazim.updateAt),
-            },
-          };
-        })
-        // my dazim first
-        .sort((a, b) => {
-          if (a.id === userId) return -1;
-          if (b.id === userId) return 1;
-          return 0;
-        })
-    );
   }
 }
