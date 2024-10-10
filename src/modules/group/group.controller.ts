@@ -23,7 +23,8 @@ import { DazimService } from '@/modules/dazim/dazim.service';
 import { CreateGroupDto } from '@/modules/group/dto/create-group.dto';
 import { CreateGroupDazimDto } from '@/modules/group/dto/create-group-dazim.dto';
 import { EnterGroupDto } from '@/modules/group/dto/enter-group.dto';
-import { GetGroupUsersQueryDto as GetGroupUsersQueryDto } from '@/modules/group/dto/get-group-users-query.dto';
+import { GetGroupUsersQueryDto } from '@/modules/group/dto/get-group-users-query.dto';
+import { GetGroupsDazimSuccessDatesQueryDto } from '@/modules/group/dto/get-groups-success-dazim-query.dto';
 import { UpdateGroupNameDto } from '@/modules/group/dto/update-group-name.dto';
 import { UpdateGroupNoticeDto } from '@/modules/group/dto/update-group-notice.dto';
 import { UpdateGroupThumbnailDto } from '@/modules/group/dto/update-group-thumbnail.dto';
@@ -68,6 +69,28 @@ export class GroupController {
     await this.groupService.enterGroup({ userId: user.id, inviteCode });
 
     res.status(HttpStatus.NO_CONTENT).send();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('/dazim-success-dates')
+  async getGroupsDazimSuccessDates(
+    @User() user: User,
+    @Query()
+    {
+      dazimStartDate,
+      dazimEndDate,
+      dazimSuccessType,
+    }: GetGroupsDazimSuccessDatesQueryDto,
+    @Res() res: Response,
+  ) {
+    const groups = await this.groupService.getGroupsDazimSuccessDates({
+      userId: user.id,
+      dazimStartDate,
+      dazimEndDate,
+      dazimSuccessType,
+    });
+
+    res.status(HttpStatus.OK).send(groups);
   }
 
   @UseGuards(JwtAuthGuard, GroupAuthGuard)
@@ -167,13 +190,13 @@ export class GroupController {
   async getGroupUsers(
     @User() user: User,
     @Param() { id }: IdParamDto,
-    @Query() { dazimCreateAt }: GetGroupUsersQueryDto,
+    @Query() { dazimCreateDate }: GetGroupUsersQueryDto,
     @Res() res: Response,
   ) {
     const users = await this.userService.getUsersByGroupId({
       userId: user.id,
       groupId: id,
-      dazimCreateAt,
+      dazimCreateDate,
     });
 
     res.status(HttpStatus.OK).send(users);
@@ -181,13 +204,13 @@ export class GroupController {
 
   @UseGuards(JwtAuthGuard, GroupAuthGuard)
   @Post('/:id/dazim')
-  async createDazim(
+  async createGroupDazim(
     @User() user: User,
     @Param() { id }: IdParamDto,
     @Body() { content }: CreateGroupDazimDto,
     @Res() res: Response,
   ) {
-    await this.dazimService.createDazim({
+    await this.dazimService.createGroupDazim({
       userId: user.id,
       groupId: id,
       content,

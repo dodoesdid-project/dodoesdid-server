@@ -108,20 +108,22 @@ model Group {
 }
 
 model Dazim {
-  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  content   String
-  photo     String?
-  isSuccess Boolean  @default(false)
-  createAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updateAt  DateTime @default(now()) @updatedAt @map("update_at") @db.Timestamptz(6)
-  userId    String   @db.Uuid
-  groupId   String   @db.Uuid
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  content    String
+  photo      String?
+  isSuccess  Boolean  @default(false)
+  createAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createDate DateTime @default(now()) @map("create_date") @db.Date
+  updateAt   DateTime @default(now()) @updatedAt @map("update_at") @db.Timestamptz(6)
+  userId     String   @db.Uuid
+  groupId    String   @db.Uuid
 
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   group          Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
   dazimComments  DazimComment[]
   dazimReactions DazimReaction[]
 
+  @@unique([userId, groupId, createDate])
   @@map("dazim")
 }
 

@@ -114,11 +114,11 @@ export class UserService {
   async getUsersByGroupId({
     userId,
     groupId,
-    dazimCreateAt,
+    dazimCreateDate,
   }: {
     userId: string;
     groupId: string;
-    dazimCreateAt: string;
+    dazimCreateDate: string;
   }) {
     const groupsOnUsers = await this.prismaService.groupsOnUsers.findMany({
       where: { groupId },
@@ -134,10 +134,7 @@ export class UserService {
             },
             dazims: {
               where: {
-                createAt: {
-                  gte: dayjs(dazimCreateAt).startOf('day').toDate(),
-                  lte: dayjs(dazimCreateAt).endOf('day').toDate(),
-                },
+                createDate: dayjs(dazimCreateDate).endOf('day').toDate(),
                 groupId,
               },
               select: {

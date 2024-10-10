@@ -3,13 +3,16 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import * as dayjs from 'dayjs';
 import { MemoryStoredFile } from 'nestjs-form-data';
+import * as shortId from 'shortid';
 import { v4 as uuid } from 'uuid';
 
 import { AwsService } from '@/modules/aws/aws.service';
+import { DazimSuccessType } from '@/modules/group/dto/get-groups-success-dazim-query.dto';
 import { PrismaService } from '@/modules/prisma/prisma.service';
 
-import { formatDateTime } from '@/utils/common';
+import { formatDate, formatDateTime } from '@/utils/common';
 
 @Injectable()
 export class GroupService {
@@ -56,7 +59,7 @@ export class GroupService {
     name: string;
     thumbnail: MemoryStoredFile;
   }): Promise<string> {
-    const inviteCode = uuid();
+    const inviteCode = shortId.generate();
 
     const uploadedThumbnail = await this.awsService.imageUploadToS3({
       buffer: thumbnail.buffer,
@@ -204,6 +207,89 @@ export class GroupService {
       createAt: formatDateTime(groupOnUser.group.createAt),
       updateAt: formatDateTime(groupOnUser.group.updateAt),
     }));
+  }
+
+  async getGroupsDazimSuccessDates({
+    userId,
+    dazimStartDate,
+    dazimEndDate,
+    dazimSuccessType,
+  }: {
+    userId: string;
+    dazimStartDate: string;
+    dazimEndDate: string;
+    dazimSuccessType: DazimSuccessType;
+  }) {
+    const groupsOnUsers = await this.prismaService.groupsOnUsers.findMany({
+      where: {
+        userId,
+      },
+      orderBy: {
+        order: 'asc',
+      },
+      select: {
+        group: {
+          select: {
+            id: true,
+            name: true,
+            _count: {
+              select: {
+                groupsOnUsers: true,
+              },
+            },
+            dazims: {
+              select: {
+                createAt: true,
+              },
+              where: {
+                createAt: {
+                  gte: dayjs(dazimStartDate).toDate(),
+                  lte: dayjs(dazimEndDate).toDate(),
+                },
+                userId: dazimSuccessType === 'PERSONAL' ? userId : undefined,
+                isSuccess: true,
+              },
+              orderBy: {
+                createAt: 'asc',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (dazimSuccessType === 'PERSONAL') {
+      return groupsOnUsers.map((groupsOnUser) => ({
+        id: groupsOnUser.group.id,
+        name: groupsOnUser.group.name,
+        userCount: groupsOnUser.group._count.groupsOnUsers,
+        dazimSuccessDates: groupsOnUser.group.dazims.map((dazim) =>
+          formatDate(dazim.createAt),
+        ),
+      }));
+    } else if (dazimSuccessType === 'GROUP') {
+      return groupsOnUsers.map((groupsOnUser) => {
+        const { group } = groupsOnUser;
+        const dazimSuccessDateCountMap = group.dazims
+          .map((dazim) => formatDate(dazim.createAt))
+          .reduce((acc, date) => {
+            acc[date] = acc[date] ? ++acc[date] : 1;
+            return acc;
+          }, {});
+
+        const dazimSuccessDates = Object.keys(dazimSuccessDateCountMap).filter(
+          (date) =>
+            dazimSuccessDateCountMap[date] >= group._count.groupsOnUsers,
+        );
+
+        return {
+          id: group.id,
+          name: group.name,
+          userCount: group._count.groupsOnUsers,
+          dazimSuccessDates,
+        };
+      });
+    }
   }
 
   async updateGroupsOrder({

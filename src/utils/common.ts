@@ -4,6 +4,10 @@ export function formatDateTime(date: Date): string {
   return dayjs(date).format('YYYY-MM-DD HH:mm:ss');
 }
 
+export function formatDate(date: Date): string {
+  return dayjs(date).format('YYYY-MM-DD');
+}
+
 export function getTimeAgo(dateTime: Date) {
   const date = dayjs(dateTime);
   const now = dayjs();

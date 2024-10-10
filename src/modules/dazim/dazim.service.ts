@@ -194,7 +194,7 @@ export class DazimService {
     };
   }
 
-  async createDazim({
+  async createGroupDazim({
     userId,
     groupId,
     content,
@@ -204,13 +204,12 @@ export class DazimService {
     content: string;
   }) {
     // check if dazim created today
-    const dazim = await this.prismaService.dazim.findFirst({
+    const dazim = await this.prismaService.dazim.findUnique({
       where: {
-        userId,
-        groupId,
-        createAt: {
-          gte: dayjs().startOf('day').toDate(),
-          lt: dayjs().endOf('day').toDate(),
+        userId_groupId_createDate: {
+          userId,
+          groupId,
+          createDate: dayjs().endOf('day').toDate(),
         },
       },
     });
