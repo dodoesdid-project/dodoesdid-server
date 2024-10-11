@@ -25,7 +25,7 @@ export class CommentController {
   constructor(private readonly commentService: CommentService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Post('/:commentId/reply')
+  @Post('/:id/reply')
   async replyComment(
     @User() user: User,
     @Param() { id }: IdParamDto,
