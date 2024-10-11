@@ -193,7 +193,7 @@ export class GroupController {
     @Query() { dazimCreateDate }: GetGroupUsersQueryDto,
     @Res() res: Response,
   ) {
-    const users = await this.userService.getUsersByGroupId({
+    const users = await this.groupService.getGroupUsers({
       userId: user.id,
       groupId: id,
       dazimCreateDate,

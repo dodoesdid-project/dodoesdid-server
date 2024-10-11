@@ -150,6 +150,105 @@ export class GroupService {
     };
   }
 
+  async getGroupUsers({
+    userId,
+    groupId,
+    dazimCreateDate,
+  }: {
+    userId: string;
+    groupId: string;
+    dazimCreateDate: string;
+  }) {
+    const group = await this.prismaService.group.findUnique({
+      where: {
+        id: groupId,
+      },
+      select: {
+        id: true,
+        name: true,
+        _count: {
+          select: {
+            dazims: {
+              where: {
+                userId,
+                groupId,
+              },
+            },
+          },
+        },
+        groupsOnUsers: {
+          select: {
+            user: {
+              select: {
+                id: true,
+                userProfile: {
+                  select: {
+                    nickName: true,
+                    thumbnail: true,
+                  },
+                },
+                dazims: {
+                  where: {
+                    createDate: dayjs(dazimCreateDate).endOf('day').toDate(),
+                    groupId,
+                  },
+                  select: {
+                    id: true,
+                    groupId: true,
+                    content: true,
+                    photo: true,
+                    isSuccess: true,
+                    createAt: true,
+                    updateAt: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      id: group.id,
+      name: group.name,
+      myDazimCount: group._count.dazims,
+      users: group.groupsOnUsers
+        .map((groupsOnUser) => {
+          const { user } = groupsOnUser;
+          const dazim = user.dazims[0] || null;
+
+          return {
+            id: user.id,
+            isMe: user.id === userId,
+            profile: user.userProfile && {
+              nickName: user.userProfile.nickName,
+              thumbnail: user.userProfile.thumbnail,
+            },
+            dazim: dazim && {
+              id: dazim.id,
+              groupId: dazim.groupId,
+              content: dazim.content,
+              photo: dazim.photo,
+              isSuccess: dazim.isSuccess,
+              createAt: formatDateTime(dazim.createAt),
+              updateAt: formatDateTime(dazim.updateAt),
+            },
+          };
+        })
+        // my dazim first, order updateAt asc
+        .sort((a, b) => {
+          if (a.id === userId) return -1;
+          if (b.id === userId) return 1;
+
+          if (!a.dazim) return 1;
+          if (!b.dazim) return -1;
+
+          return dayjs(a.dazim.updateAt).diff(dayjs(b.dazim.updateAt));
+        }),
+    };
+  }
+
   async getGroupByDazimId(id: string) {
     const dazim = await this.prismaService.dazim.findUnique({
       where: {

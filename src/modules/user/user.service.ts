@@ -15,8 +15,6 @@ import { User } from '@/common/decorators/user.decorator';
 import { AwsService } from '@/modules/aws/aws.service';
 import { PrismaService } from '@/modules/prisma/prisma.service';
 
-import { formatDateTime } from '@/utils/common';
-
 @Injectable()
 export class UserService {
   constructor(
@@ -109,80 +107,6 @@ export class UserService {
         : null,
       profile: user.userProfile,
     };
-  }
-
-  async getUsersByGroupId({
-    userId,
-    groupId,
-    dazimCreateDate,
-  }: {
-    userId: string;
-    groupId: string;
-    dazimCreateDate: string;
-  }) {
-    const groupsOnUsers = await this.prismaService.groupsOnUsers.findMany({
-      where: { groupId },
-      select: {
-        user: {
-          select: {
-            id: true,
-            userProfile: {
-              select: {
-                nickName: true,
-                thumbnail: true,
-              },
-            },
-            dazims: {
-              where: {
-                createDate: dayjs(dazimCreateDate).endOf('day').toDate(),
-                groupId,
-              },
-              select: {
-                id: true,
-                groupId: true,
-                content: true,
-                photo: true,
-                isSuccess: true,
-                createAt: true,
-                updateAt: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return (
-      groupsOnUsers
-        .map((groupsOnUser) => {
-          const { user } = groupsOnUser;
-          const dazim = user.dazims[0] || null;
-
-          return {
-            id: user.id,
-            isMe: user.id === userId,
-            profile: user.userProfile && {
-              nickName: user.userProfile.nickName,
-              thumbnail: user.userProfile.thumbnail,
-            },
-            dazim: dazim && {
-              id: dazim.id,
-              groupId: dazim.groupId,
-              content: dazim.content,
-              photo: dazim.photo,
-              isSuccess: dazim.isSuccess,
-              createAt: formatDateTime(dazim.createAt),
-              updateAt: formatDateTime(dazim.updateAt),
-            },
-          };
-        })
-        // my dazim first
-        .sort((a, b) => {
-          if (a.id === userId) return -1;
-          if (b.id === userId) return 1;
-          return 0;
-        })
-    );
   }
 
   async upsertProfile({
